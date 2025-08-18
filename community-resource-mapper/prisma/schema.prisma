@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Resource {
+  id            String    @id @default(cuid())
+  name          String
+  category      String    // "food", "shelter", "health", etc.
+  type          String    // "food_bank", "soup_kitchen", etc.
+  address       String
+  lat           Float     // Latitude for map pins
+  lng           Float     // Longitude for map pins
+  schedule      Json      // Complex hours: {"monday": "9-5", "tuesday": "closed"}
+  offerings     Json      // What they provide: ["hot_meals", "groceries"]
+  requirements  Json      // Rules: ["id_required", "families_only"]
+  phone         String?   // Optional phone number
+  website       String?   // Optional website
+  lastVerified  DateTime? // When someone last confirmed it's accurate
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relationship: one resource can have many verifications
+  verifications Verification[]
+  
+  // Database indexes for fast queries
+  @@index([lat, lng])      // Fast location searches
+  @@index([category])      // Fast filtering by type
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  resourceId String   // Which resource this verifies
+  status     String   // "open", "closed", "accurate", "needs_update"
+  notes      String?  // Optional user comment: "Line was short today"
+  deviceId   String   // Anonymous user identifier
+  timestamp  DateTime @default(now())
+  
+  // Relationship: each verification belongs to one resource
+  resource   Resource @relation(fields: [resourceId], references: [id])
+}
