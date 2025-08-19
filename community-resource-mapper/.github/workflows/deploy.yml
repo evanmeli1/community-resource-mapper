@@ -1,29 +1,36 @@
 name: Deploy Community Resource Mapper
 
-# When should this workflow run?
 on:
   push:
-    branches: [ main, develop ]  # Run when code pushed to these branches
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]           # Run when someone creates a pull request
+    branches: [ main ]
 
-# What jobs should run?
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest       # Use GitHub's Ubuntu server
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4   # Download your code to the runner
+      uses: actions/checkout@v4
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'        # Use Node.js version 18
+        node-version: '18'
         
+    - name: Debug working dir
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Files in current directory:"
+        ls -lah
+
     - name: Install dependencies
-      run: npm ci                 # Install your packages
-      
+      run: npm ci
+      working-directory: ./
+
     - name: Run tests
-      run: npm test               # Run your test suite
+      run: npm test
+      working-directory: ./
