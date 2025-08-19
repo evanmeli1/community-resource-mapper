@@ -27,10 +27,12 @@ jobs:
         echo "Top-level files:"
         ls -lah
         echo "Looking for package.json:"
-        find . -maxdepth 2 -name "package.json"
+        find . -maxdepth 3 -name "package.json"
 
     - name: Install dependencies
       run: npm install
+      working-directory: ./community-resource-mapper
 
     - name: Run tests
       run: npm test
+      working-directory: ./community-resource-mapper
