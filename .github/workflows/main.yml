@@ -1,28 +1,36 @@
-name: Debug CI
+name: Deploy Community Resource Mapper
+
 on:
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main ]
+
 jobs:
-  debug:
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Debug - List files
-      run: |
-        echo "Current directory:"
-        pwd
-        echo "Files in current directory:"
-        ls -la
-        echo "Looking for package.json:"
-        find . -name "package.json" -type f
-        
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         
+    - name: Debug repo contents
+      run: |
+        echo "PWD:"
+        pwd
+        echo "Top-level files:"
+        ls -lah
+        echo "Looking for package.json:"
+        find . -maxdepth 2 -name "package.json"
+
     - name: Install dependencies
-      run: npm install
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
