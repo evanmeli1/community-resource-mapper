@@ -20,6 +20,9 @@ jobs:
       - name: Dump database
         run: pg_dump $DATABASE_URL > backup.sql
 
+      - name: List files (debug)
+        run: ls -la
+
       - name: Upload to S3
         uses: aws-actions/s3-sync@v2
         with:
