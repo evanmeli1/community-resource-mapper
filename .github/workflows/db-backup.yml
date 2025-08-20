@@ -3,7 +3,7 @@ name: Database Backup
 on:
   schedule:
     - cron: "0 3 * * *" # runs daily at 3AM UTC
-  workflow_dispatch: # allows manual trigger
+  workflow_dispatch:
   push:
     branches:
       - develop
@@ -18,7 +18,7 @@ jobs:
         run: sudo apt-get install -y postgresql-client
 
       - name: Dump database
-        run: pg_dump $DATABASE_URL > backup.sql
+        run: pg_dump "${{ secrets.DATABASE_URL }}" > backup.sql
 
       - name: List files (debug)
         run: ls -la
@@ -31,5 +31,5 @@ jobs:
           AWS_S3_BUCKET: community-db-backups-evanmeli1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: us-east-2
           SOURCE_DIR: .
