@@ -2,13 +2,8 @@ name: Database Backup
 
 on:
   schedule:
-    - cron: "0 3 * * *" # runs daily at 3AM UTC
-  workflow_dispatch:
-  push:
-    branches:
-      - develop
-    paths:
-      - '.github/workflows/db-backup.yml'
+    - cron: "0 3 * * *" # daily at 3AM UTC
+  workflow_dispatch: # allow manual run from Actions tab
 
 jobs:
   backup:
@@ -21,11 +16,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
 
+      - name: Test DB connection
+        run: psql "${{ secrets.DATABASE_URL }}" -c "\conninfo"
+
       - name: Dump database
         run: pg_dump "${{ secrets.DATABASE_URL }}" > backup.sql
 
       - name: List files (debug)
-        run: ls -la
+        run: ls -lh
 
       - name: Upload to S3
         uses: jakejarvis/s3-sync-action@master
