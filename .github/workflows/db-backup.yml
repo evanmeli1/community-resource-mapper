@@ -1,0 +1,25 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # runs daily at 3AM UTC
+  workflow_dispatch: # allows manual trigger from Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Dump database
+        run: pg_dump $DATABASE_URL > backup.sql
+
+      - name: Upload to S3
+        uses: aws-actions/s3-sync@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          source: .
+          destination: s3://community-db-backups-evanmeli1/${{ github.run_id }}

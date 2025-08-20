@@ -7,6 +7,8 @@ import ResourceList from './components/ResourceList';
 import ResourceFilter from './components/ResourceFilter';
 import { isOpenNow } from './utils/scheduleUtils';
 import './lib/startup';
+import * as Sentry from "@sentry/nextjs";
+
 
 interface Resource {
   id: string;
@@ -113,6 +115,10 @@ function HomeContent() {
     filteredResources.sort((a, b) => (a.distance || 0) - (b.distance || 0));
   }
 
+  useEffect(() => {
+
+  }, []);
+
   if (loading) {
     return (
       <main className="container mx-auto p-4 text-center">
@@ -162,6 +168,22 @@ function HomeContent() {
           Find community resources with real-time availability
         </p>
       </div>
+      <div className="text-center mt-6">
+  <button
+    onClick={() => {
+      try {
+        throw new Error("Sentry test error triggered by button");
+      } catch (err) {
+        Sentry.captureException(err);
+        console.error("Test error captured:", err);
+      }
+    }}
+    className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600"
+  >
+    🔴 Trigger Sentry Error
+  </button>
+</div>
+
     </main>
   );
 }

@@ -5,6 +5,8 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 });
 
+const { withSentryConfig } = require("@sentry/nextjs");
+
 const nextConfig = withPWA({
   eslint: {
     ignoreDuringBuilds: true,
@@ -12,6 +14,14 @@ const nextConfig = withPWA({
   typescript: {
     ignoreBuildErrors: true,
   },
+  webpack: (config) => {
+    // Silence the noisy dynamic require warnings from Sentry/OTEL
+    config.ignoreWarnings = [
+      { module: /@opentelemetry/ },
+      { module: /require-in-the-middle/ },
+    ];
+    return config;
+  },
 });
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig);
