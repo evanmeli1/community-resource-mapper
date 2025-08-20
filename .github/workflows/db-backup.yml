@@ -18,11 +18,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
 
+      - name: Verify PostgreSQL versions
+        run: |
+          echo "Default versions:"
+          psql --version
+          pg_dump --version
+          echo ""
+          echo "PostgreSQL 17 versions:"
+          /usr/lib/postgresql/17/bin/psql --version
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
       - name: Test DB connection
-        run: psql "${{ secrets.DATABASE_URL }}" -c "\conninfo"
+        run: /usr/lib/postgresql/17/bin/psql "${{ secrets.DATABASE_URL }}" -c "\conninfo"
 
       - name: Dump database
-        run: pg_dump "${{ secrets.DATABASE_URL }}" > backup.sql
+        run: |
+          /usr/lib/postgresql/17/bin/pg_dump "${{ secrets.DATABASE_URL }}" > backup.sql
+          echo "Backup created, size: $(du -h backup.sql | cut -f1)"
 
       - name: List files (debug)
         run: ls -lh
