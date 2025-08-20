@@ -10,15 +10,17 @@ function logApiCall(request: NextRequest, status: number, responseTime: number) 
   const userAgent = request.headers.get("user-agent") ?? "unknown";
   const timestamp = new Date().toISOString();
   
+  // Log to console (in production, this would go to a logging service)
   console.log(`[AUDIT] ${timestamp} | ${request.method} ${request.url} | IP: ${ip} | Status: ${status} | Time: ${responseTime}ms | User-Agent: ${userAgent}`);
 }
 
 export async function GET(request: NextRequest) {
-  const startTime = Date.now();
+  const startTime = Date.now(); // Track how long the request takes
   
   // Check rate limit
   const rateLimitResponse = await checkRateLimit(request);
   if (rateLimitResponse) {
+    // Log the rate-limited request
     logApiCall(request, 429, Date.now() - startTime);
     return rateLimitResponse;
   }
@@ -43,6 +45,8 @@ export async function GET(request: NextRequest) {
     })
 
     const responseTime = Date.now() - startTime;
+    
+    // Log successful request
     logApiCall(request, 200, responseTime);
 
     return NextResponse.json({
@@ -60,6 +64,8 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     const responseTime = Date.now() - startTime;
+    
+    // Log failed request
     logApiCall(request, 500, responseTime);
     
     console.error('Error fetching resources:', error)

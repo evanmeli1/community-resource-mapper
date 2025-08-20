@@ -1,5 +1,3 @@
-import type { NextConfig } from "next";
-
 const withPWA = require('next-pwa')({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
@@ -7,8 +5,7 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 });
 
-const nextConfig: NextConfig = withPWA({
-  // Skip linting and type checking during builds
+const nextConfig = withPWA({
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -17,4 +14,4 @@ const nextConfig: NextConfig = withPWA({
   },
 });
 
-export default nextConfig;
+module.exports = nextConfig;
