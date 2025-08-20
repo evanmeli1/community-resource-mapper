@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         phone: true,
         website: true,
         lastVerified: true,
+        schedule: true,
       },
       orderBy: {
         name: 'asc'
