@@ -1,0 +1,56 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # daily at 3AM UTC (fixed)
+  workflow_dispatch: # allow manual run from Actions tab
+  push:
+    branches:
+      - develop  # changed to match your branch
+    paths:
+      - '.github/workflows/db-backup.yml'
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Verify PostgreSQL versions
+        run: |
+          echo "Default versions:"
+          psql --version
+          pg_dump --version
+          echo ""
+          echo "PostgreSQL 17 versions:"
+          /usr/lib/postgresql/17/bin/psql --version
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Test DB connection
+        run: /usr/lib/postgresql/17/bin/psql "${{ secrets.DATABASE_URL }}" -c "\conninfo"
+
+      - name: Dump database
+        run: |
+          /usr/lib/postgresql/17/bin/pg_dump "${{ secrets.DATABASE_URL }}" > backup.sql
+          echo "Backup created, size: $(du -h backup.sql | cut -f1)"
+
+      - name: List files (debug)
+        run: ls -lh
+
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --exact-timestamps
+        env:
+          AWS_S3_BUCKET: community-db-backups-evanmeli1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+          SOURCE_DIR: .

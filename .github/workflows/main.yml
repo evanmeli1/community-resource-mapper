@@ -28,11 +28,13 @@ jobs:
         ls -lah
         echo "Looking for package.json:"
         find . -maxdepth 3 -name "package.json"
+        echo "Directory structure:"
+        tree -L 2 || find . -type d -maxdepth 2
 
     - name: Install dependencies
       run: npm install
-      working-directory: ./community-resource-mapper
+      # Removed working-directory temporarily
 
     - name: Run tests
       run: npm test
-      working-directory: ./community-resource-mapper
+      # Removed working-directory temporarily
