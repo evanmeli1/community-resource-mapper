@@ -177,7 +177,7 @@ export default function ResourceList({ resources }: ResourceListProps) {
               >
                 <Link 
                   href={`/resource/${resource.id}`}
-                  className="block bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-slate-200/50 hover:border-slate-300/50 transition-all"
+                      className="block bg-amber-50/90 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-slate-200/50 hover:border-slate-300/50 transition-all"
                 >
                   {/* Main Content */}
                   <div className="flex items-start justify-between">
@@ -219,17 +219,6 @@ export default function ResourceList({ resources }: ResourceListProps) {
                           {resource.distance.toFixed(1)} km away
                         </motion.p>
                       )}
-
-                    {/* Debug logs */}
-                        {(() => {
-                         console.log('Resource has schedule?', !!resource.schedule);
-                         console.log('Schedule data:', resource.schedule);
-                         if (resource.schedule) {
-                        console.log('Status result:', getStatusDisplay(resource.schedule));
-                      }
-                             return null;
-                          })()}
-
 
                       {/* Operating hours status */}
                       {resource.schedule && (

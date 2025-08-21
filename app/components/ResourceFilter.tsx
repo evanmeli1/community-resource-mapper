@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ResourceFilterProps {
@@ -11,6 +11,8 @@ interface ResourceFilterProps {
   showOpenOnly: boolean;
   sortBy: string;
   userLocation: {lat: number, lng: number} | null;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
 }
 
 export default function ResourceFilter({
@@ -19,11 +21,23 @@ export default function ResourceFilter({
   currentCategory,
   showOpenOnly,
   sortBy,
-  userLocation
+  userLocation,
+  searchTerm,
+  onSearchChange
 }: ResourceFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localSearchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localSearchTerm, onSearchChange]);
 
   const updateFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -37,6 +51,11 @@ export default function ResourceFilter({
     router.push(`?${params.toString()}`);
   };
 
+  const clearSearch = () => {
+    setLocalSearchTerm('');
+    onSearchChange('');
+  };
+
   const categories = [
     { value: 'all', label: 'All Categories', icon: '🏠' },
     { value: 'food', label: 'Food', icon: '🍽️' },
@@ -48,17 +67,56 @@ export default function ResourceFilter({
   const activeFiltersCount = [
     currentCategory !== 'all' ? 1 : 0,
     showOpenOnly ? 1 : 0,
-    sortBy !== 'name' ? 1 : 0
+    sortBy !== 'name' ? 1 : 0,
+    searchTerm ? 1 : 0
   ].reduce((a, b) => a + b, 0);
 
   return (
     <motion.div 
-      className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden"
+      className="bg-amber-50/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden"
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       <div className="p-4">
+        {/* Search Bar */}
+        <motion.div 
+          className="mb-4"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
+              placeholder="Search resources by name, address, or type..."
+              className="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl bg-white/80 backdrop-blur-sm placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            {localSearchTerm && (
+              <motion.button
+                onClick={clearSearch}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <svg className="h-5 w-5 text-slate-400 hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </motion.button>
+            )}
+          </div>
+        </motion.div>
+
         {/* Main Filter Row */}
         <div className="flex items-center justify-between gap-4">
           {/* Category Pills */}
@@ -207,6 +265,7 @@ export default function ResourceFilter({
                         updateFilter('category', 'all');
                         updateFilter('openNow', 'false');
                         updateFilter('sortBy', 'name');
+                        clearSearch();
                       }}
                       className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
                       whileHover={{ scale: 1.02 }}
@@ -230,6 +289,9 @@ export default function ResourceFilter({
         >
           <p className="text-sm text-slate-600">
             <span className="font-medium text-slate-900">{filteredCount}</span> of {totalResources} resources
+            {searchTerm && (
+              <span className="text-slate-500"> for "{searchTerm}"</span>
+            )}
           </p>
           
           {!userLocation && (

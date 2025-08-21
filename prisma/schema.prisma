@@ -27,8 +27,9 @@ model Resource {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
-  // Relationship: one resource can have many verifications
+  // Relationships
   verifications Verification[]
+  comments      Comment[]
   
   // Database indexes for fast queries
   @@index([lat, lng])      // Fast location searches
@@ -45,4 +46,38 @@ model Verification {
   
   // Relationship: each verification belongs to one resource
   resource   Resource @relation(fields: [resourceId], references: [id])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?  // Optional display name
+  password  String   // Hashed password
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  comments  Comment[]
+  
+  @@index([email])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  resourceId String   // Which resource this comment is about
+  userId     String?  // NULL for anonymous comments
+  content    String   // The actual comment text
+  deviceId   String?  // For anonymous users (location verification)
+  isVerified Boolean  @default(false) // True if from registered user
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relationships
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Indexes for performance
+  @@index([resourceId])
+  @@index([createdAt])
+  @@index([userId])
 }
