@@ -4,9 +4,25 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
-import ResourceMap from "./components/ResourceMap";
-import ResourceList from "./components/ResourceList";
+import dynamic from 'next/dynamic';
 import ResourceFilter from "./components/ResourceFilter";
+
+// Lazy load components with loading states
+const ResourceMap = dynamic(() => import('./components/ResourceMap'), {
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+    </div>
+  )
+});
+
+const ResourceList = dynamic(() => import('./components/ResourceList'), {
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+    </div>
+  )
+});
 import { isOpenNow } from "./utils/scheduleUtils";
 import "./lib/startup";
 import * as Sentry from "@sentry/nextjs";
@@ -49,9 +65,8 @@ function calculateDistance(
 function HomeContent() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const router = useRouter(); // ✅ moved inside component
+  const router = useRouter();
   const [showAuthModal, setShowAuthModal] = useState(false);
-
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -65,12 +80,38 @@ function HomeContent() {
     setIsClient(true);
   }, []);
 
-  // FETCH RESOURCES
+  // FETCH RESOURCES WITH OPTIMIZATION
   useEffect(() => {
     async function fetchResources() {
       try {
-        const response = await fetch("/api/resources");
+        const params = new URLSearchParams();
+        
+        // Add geographic bounds if we have user location
+        if (userLocation) {
+          const latDelta = 0.9; // ~100km radius
+          const lngDelta = 0.9;
+          
+          params.set('north', (userLocation.lat + latDelta).toString());
+          params.set('south', (userLocation.lat - latDelta).toString());
+          params.set('east', (userLocation.lng + lngDelta).toString());
+          params.set('west', (userLocation.lng - lngDelta).toString());
+        }
+        
+        // Add category filter
+        const category = searchParams.get("category");
+        if (category && category !== 'all' && category !== 'saved') {
+          params.set('category', category);
+        }
+        
+        // Add search filter
+        if (searchTerm.trim()) {
+          params.set('search', searchTerm);
+        }
+        
+        const url = `/api/resources${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
         const data = await response.json();
+        
         if (data.success) {
           setResources(data.data);
         }
@@ -80,8 +121,9 @@ function HomeContent() {
         setLoading(false);
       }
     }
+    
     fetchResources();
-  }, []);
+  }, [userLocation, searchParams, searchTerm]); // Re-fetch when these change
 
   // GEOLOCATION
   useEffect(() => {
@@ -103,7 +145,7 @@ function HomeContent() {
     }
   }, []);
 
-  // PROCESS RESOURCES
+  // PROCESS RESOURCES (add distance)
   const processedResources = resources.map((resource) => {
     if (userLocation) {
       return {
@@ -119,23 +161,12 @@ function HomeContent() {
     return resource;
   });
 
-  // FILTERING
+  // FILTERING (only client-side filters that can't be done server-side)
   let filteredResources = processedResources;
-
-  if (searchTerm.trim()) {
-    filteredResources = filteredResources.filter(
-      (resource) =>
-        resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        resource.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        resource.type
-          .replace("_", " ")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-    );
-  }
 
   const category = searchParams.get("category");
 
+  // Only keep saved favorites filter (client-side only)
   if (category === "saved") {
     if (isClient) {
       const savedFavorites = localStorage.getItem("resourceFavorites");
@@ -153,12 +184,9 @@ function HomeContent() {
         filteredResources = [];
       }
     }
-  } else if (category && category !== "all") {
-    filteredResources = filteredResources.filter(
-      (resource) => resource.category === category
-    );
   }
 
+  // Keep openNow filter (too complex for server-side)
   const openNow = searchParams.get("openNow");
   if (openNow === "true") {
     filteredResources = filteredResources.filter((resource) => {
@@ -167,6 +195,7 @@ function HomeContent() {
     });
   }
 
+  // Keep distance sorting
   const sortBy = searchParams.get("sortBy");
   if (sortBy === "distance" && userLocation) {
     filteredResources.sort(
@@ -176,7 +205,11 @@ function HomeContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+      <div 
+        className="min-h-screen bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center"
+        role="status" 
+        aria-live="polite"
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -186,11 +219,13 @@ function HomeContent() {
             className="w-12 h-12 border-4 border-slate-300 border-t-slate-600 rounded-full mx-auto mb-4"
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            aria-hidden="true"
           />
           <h1 className="text-2xl font-bold mb-2 text-slate-900">
             Community Resource Mapper
           </h1>
           <p className="text-slate-600 font-medium">Loading resources...</p>
+          <span className="sr-only">Please wait while resources are being loaded</span>
         </motion.div>
       </div>
     );
@@ -198,6 +233,14 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-100 to-orange-100">
+      {/* Skip Link */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded z-50"
+      >
+        Skip to main content
+      </a>
+
       {/* Header */}
       <motion.header
         className="bg-amber-50/90 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50"
@@ -220,6 +263,7 @@ function HomeContent() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -253,15 +297,20 @@ function HomeContent() {
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
+                role="tablist"
+                aria-label="View options"
               >
                 {[
-                  { key: "split", icon: "⊞", label: "Split" },
-                  { key: "map", icon: "🗺️", label: "Map" },
-                  { key: "list", icon: "📋", label: "List" },
-                ].map(({ key, icon, label }) => (
+                  { key: "split", icon: "⊞", label: "Split", ariaLabel: "Switch to split view showing map and list" },
+                  { key: "map", icon: "🗺️", label: "Map", ariaLabel: "Switch to map-only view" },
+                  { key: "list", icon: "📋", label: "List", ariaLabel: "Switch to list-only view" }
+                ].map(({ key, icon, label, ariaLabel }) => (
                   <motion.button
                     key={key}
                     onClick={() => setActiveView(key as any)}
+                    aria-label={ariaLabel}
+                    aria-pressed={activeView === key}
+                    role="tab"
                     className={`relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                       activeView === key
                         ? "text-slate-900"
@@ -283,7 +332,7 @@ function HomeContent() {
                       />
                     )}
                     <span className="relative flex items-center space-x-1">
-                      <span>{icon}</span>
+                      <span aria-hidden="true">{icon}</span>
                       <span className="hidden lg:inline">{label}</span>
                     </span>
                   </motion.button>
@@ -294,7 +343,11 @@ function HomeContent() {
               {session ? (
                 <div className="relative">
                   <button
+                    id="user-menu-button"
                     onClick={() => setMenuOpen(!menuOpen)}
+                    aria-label={`User menu for ${session.user?.name || 'user'}`}
+                    aria-expanded={menuOpen}
+                    aria-haspopup="menu"
                     className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center font-semibold text-slate-700 hover:bg-slate-300"
                   >
                     {session.user?.name?.[0] ?? "U"}
@@ -306,21 +359,26 @@ function HomeContent() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        role="menu"
+                        aria-labelledby="user-menu-button"
                         className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden z-50"
                       >
                         <button
-                        className="w-full text-left px-4 py-2 text-sm text-slate-800 hover:bg-slate-100"
+                          role="menuitem"
+                          className="w-full text-left px-4 py-2 text-sm text-slate-800 hover:bg-slate-100"
                           onClick={() => router.push("/profile")}
                         >
                           Profile
                         </button>
                         <button
+                          role="menuitem"
                           className="w-full text-left px-4 py-2 text-sm text-slate-800 hover:bg-slate-100"
                           onClick={() => router.push("/help")}
                         >
                           Help
                         </button>
                         <button
+                          role="menuitem"
                           className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-100"
                           onClick={() => signOut()}
                         >
@@ -337,7 +395,6 @@ function HomeContent() {
                  >
                     Login
                 </button>
-
               )}
             </div>
           </div>
@@ -345,7 +402,7 @@ function HomeContent() {
       </motion.header>
 
       {/* Main */}
-      <main className="max-w-7xl mx-auto p-4">
+      <main id="main-content" className="max-w-7xl mx-auto p-4">
         <motion.div
           initial={{ y: -10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -375,82 +432,86 @@ function HomeContent() {
               transition={{ duration: 0.3 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6"
             >
-              <motion.div
+              <motion.section
                 className="bg-amber-50/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden order-1 lg:order-1"
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
+                aria-labelledby="map-section-heading"
               >
                 <div className="p-4 border-b border-slate-200/50">
-                  <h2 className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
-                    <span>📍</span>
+                  <h2 id="map-section-heading" className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
+                    <span aria-hidden="true">📍</span>
                     <span>Map View</span>
                   </h2>
                 </div>
                 <div className="h-64 md:h-96">
                   <ResourceMap resources={filteredResources} />
                 </div>
-              </motion.div>
+              </motion.section>
 
-              <motion.div
+              <motion.section
                 className="bg-amber-50/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden order-2 lg:order-2"
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
+                aria-labelledby="list-section-heading"
               >
                 <div className="p-4 border-b border-slate-200/50">
-                  <h2 className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
-                    <span>📋</span>
+                  <h2 id="list-section-heading" className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
+                    <span aria-hidden="true">📋</span>
                     <span>Resources ({filteredResources.length} found)</span>
                   </h2>
                 </div>
                 <div className="h-64 md:h-96">
                   <ResourceList resources={filteredResources} />
                 </div>
-              </motion.div>
+              </motion.section>
             </motion.div>
           )}
 
           {activeView === "map" && (
-            <motion.div
+            <motion.section
               key="map"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               className="bg-amber-50/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden"
+              aria-labelledby="map-full-heading"
             >
               <div className="p-4 border-b border-slate-200/50">
-                <h2 className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
-                  <span>📍</span>
+                <h2 id="map-full-heading" className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
+                  <span aria-hidden="true">📍</span>
                   <span>Map View</span>
                 </h2>
               </div>
               <div className="h-64 md:h-96 lg:h-[70vh]">
                 <ResourceMap resources={filteredResources} />
               </div>
-            </motion.div>
+            </motion.section>
           )}
 
           {activeView === "list" && (
-            <motion.div
+            <motion.section
               key="list"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               className="bg-amber-50/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden"
+              aria-labelledby="list-full-heading"
             >
               <div className="p-4 border-b border-slate-200/50">
-                <h2 className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
-                  <span>📋</span>
+                <h2 id="list-full-heading" className="text-lg md:text-xl font-semibold text-slate-900 flex items-center space-x-2">
+                  <span aria-hidden="true">📋</span>
                   <span>Resources ({filteredResources.length} found)</span>
                 </h2>
               </div>
               <div className="h-64 md:h-96 lg:h-[70vh]">
                 <ResourceList resources={filteredResources} />
               </div>
-            </motion.div>
+            </motion.section>
           )}
         </AnimatePresence>
 
@@ -465,18 +526,19 @@ function HomeContent() {
           </p>
         </motion.div>
       </main>
-          <AuthModal 
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={() => window.location.reload()} 
-          />
+      
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => window.location.reload()} 
+      />
     </div>
   );
 }
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="text-center p-8">Loading...</div>}>
+    <Suspense fallback={<div className="text-center p-8" role="status" aria-live="polite">Loading...</div>}>
       <HomeContent />
     </Suspense>
   );

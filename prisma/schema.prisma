@@ -32,8 +32,12 @@ model Resource {
   comments      Comment[]
   
   // Database indexes for fast queries
-  @@index([lat, lng])      // Fast location searches
-  @@index([category])      // Fast filtering by type
+  @@index([lat, lng])           // Fast location searches
+  @@index([category])           // Fast filtering by type
+  @@index([category, lat, lng]) // Combined category + geographic queries
+  @@index([name])              // Search by name
+  @@index([address])           // Search by address
+  @@index([type])              // Search by type
 }
 
 model Verification {
