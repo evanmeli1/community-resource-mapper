@@ -1,8 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminAuth } from "../../../../lib/adminAuth";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../../lib/prisma";
 
-const prisma = new PrismaClient();
+// Validation helper
+function validateResourceData(data: any) {
+  const errors = [];
+  
+  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0 || data.name.length > 100) {
+    errors.push('Name is required and must be under 100 characters');
+  }
+  
+  if (!data.address || typeof data.address !== 'string' || data.address.length > 200) {
+    errors.push('Address is required and must be under 200 characters');
+  }
+  
+  const lat = parseFloat(data.lat);
+  const lng = parseFloat(data.lng);
+  if (isNaN(lat) || lat < -90 || lat > 90) {
+    errors.push('Valid latitude required (-90 to 90)');
+  }
+  if (isNaN(lng) || lng < -180 || lng > 180) {
+    errors.push('Valid longitude required (-180 to 180)');
+  }
+  
+  if (data.phone && (typeof data.phone !== 'string' || data.phone.length > 20)) {
+    errors.push('Phone must be under 20 characters');
+  }
+  
+  if (data.website && (typeof data.website !== 'string' || !data.website.match(/^https?:\/\/.+/))) {
+    errors.push('Website must be a valid URL');
+  }
+  
+  return { isValid: errors.length === 0, errors, cleanData: {
+    name: data.name?.trim(),
+    category: data.category,
+    type: data.type,
+    address: data.address?.trim(),
+    lat,
+    lng,
+    phone: data.phone?.trim() || null,
+    website: data.website?.trim() || null,
+    schedule: data.schedule || {},
+    offerings: data.offerings || [],
+    requirements: data.requirements || []
+  }};
+}
 
 // Delete resource
 export async function DELETE(
@@ -15,13 +57,22 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
+  // Validate ID format
+  if (!params.id || typeof params.id !== 'string' || params.id.length < 10) {
+    return NextResponse.json({ error: "Invalid resource ID" }, { status: 400 });
+  }
+  
   try {
-    await prisma.resource.delete({
+    const deletedResource = await prisma.resource.delete({
       where: { id: params.id }
     });
     
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Delete error:', error); // Log for debugging, don't expose
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: "Resource not found" }, { status: 404 });
+    }
     return NextResponse.json({ error: "Failed to delete resource" }, { status: 500 });
   }
 }
@@ -37,28 +88,30 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
+  // Validate ID format
+  if (!params.id || typeof params.id !== 'string' || params.id.length < 10) {
+    return NextResponse.json({ error: "Invalid resource ID" }, { status: 400 });
+  }
+  
   try {
-    const data = await request.json();
+    const rawData = await request.json();
+    const { isValid, errors, cleanData } = validateResourceData(rawData);
+    
+    if (!isValid) {
+      return NextResponse.json({ error: "Validation failed", details: errors }, { status: 400 });
+    }
     
     const resource = await prisma.resource.update({
       where: { id: params.id },
-      data: {
-        name: data.name,
-        category: data.category,
-        type: data.type,
-        address: data.address,
-        lat: parseFloat(data.lat),
-        lng: parseFloat(data.lng),
-        phone: data.phone || null,
-        website: data.website || null,
-        schedule: data.schedule,
-        offerings: data.offerings,
-        requirements: data.requirements
-      }
+      data: cleanData
     });
     
     return NextResponse.json({ success: true, resource });
   } catch (error) {
+    console.error('Update error:', error);
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: "Resource not found" }, { status: 404 });
+    }
     return NextResponse.json({ error: "Failed to update resource" }, { status: 500 });
   }
 }

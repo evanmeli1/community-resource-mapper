@@ -19,7 +19,6 @@ interface Resource {
 export default function ResourceComments({ params }: { params: { id: string } }) {
   const [resource, setResource] = useState<Resource | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,16 +28,14 @@ export default function ResourceComments({ params }: { params: { id: string } })
   const fetchResourceWithComments = async () => {
     try {
       const response = await fetch(`/api/admin/resources/${params.id}/comments`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
+      if (response.ok) {
+        const data = await response.json();
+        setResource(data.resource);
+      } else {
+        console.error('Failed to fetch comments');
       }
-      
-      const data = await response.json();
-      setResource(data.resource);
     } catch (error) {
-      console.error('Failed to fetch comments:', error);
-      setError('Failed to load comments');
+      console.error('Error fetching comments:', error);
     } finally {
       setLoading(false);
     }
@@ -53,7 +50,6 @@ export default function ResourceComments({ params }: { params: { id: string } })
       });
       
       if (response.ok) {
-        // Remove comment from state
         setResource(prev => prev ? ({
           ...prev,
           comments: prev.comments.filter(c => c.id !== commentId)
@@ -62,32 +58,12 @@ export default function ResourceComments({ params }: { params: { id: string } })
         alert('Failed to delete comment');
       }
     } catch (error) {
-      console.error('Delete error:', error);
       alert('Error deleting comment');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center">Loading comments...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !resource) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            {error || 'Resource not found'}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-8">Loading...</div>;
+  if (!resource) return <div className="p-8">Resource not found</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
@@ -99,11 +75,11 @@ export default function ResourceComments({ params }: { params: { id: string } })
           >
             ← Back to Resources
           </button>
-          <h1 className="text-2xl font-bold">Comments for {resource.name}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Comments for {resource.name}</h1>
         </div>
         
-        {!resource.comments || resource.comments.length === 0 ? (
-          <div className="bg-white p-8 rounded-lg shadow text-center text-slate-500">
+        {resource.comments.length === 0 ? (
+          <div className="bg-white p-8 rounded-lg shadow text-center text-slate-600">
             No comments yet for this resource
           </div>
         ) : (
@@ -111,28 +87,28 @@ export default function ResourceComments({ params }: { params: { id: string } })
             <table className="w-full">
               <thead className="bg-slate-100">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">User</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Comment</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase">User</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase">Comment</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {resource.comments.map((comment) => (
                   <tr key={comment.id}>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3 text-sm text-slate-900">
                       {comment.user?.name || 'Anonymous'}
                     </td>
-                    <td className="px-4 py-3 text-sm max-w-md">
+                    <td className="px-4 py-3 text-sm text-slate-900 max-w-md">
                       <div className="break-words">{comment.content}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3 text-sm text-slate-700">
                       {new Date(comment.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <button 
                         onClick={() => deleteComment(comment.id)}
-                        className="text-red-600 hover:text-red-900 hover:underline"
+                        className="text-red-600 hover:text-red-900"
                       >
                         Delete
                       </button>

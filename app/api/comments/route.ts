@@ -1,32 +1,80 @@
-// app/api/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '../auth/[...nextauth]/route'  // 👈 import your auth options
-
-const prisma = new PrismaClient()
+import { authOptions } from '../auth/[...nextauth]/route'
+import { checkRateLimit } from '../middleware/rateLimit'
+import { prisma } from '../../lib/prisma'
 
 export async function POST(request: NextRequest) {
-  try {
-    // ✅ Make sure to pass authOptions
-    const session = await getServerSession(authOptions)
+  // Rate limiting
+  const rateLimitResponse = await checkRateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
 
+  try {
+    const session = await getServerSession(authOptions)
     const { resourceId, content, deviceId } = await request.json()
 
-    if (!resourceId || !content) {
+    // Input validation
+    if (!resourceId || typeof resourceId !== 'string' || resourceId.length < 10) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Invalid resource ID' },
         { status: 400 }
       )
+    }
+
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Content is required' },
+        { status: 400 }
+      )
+    }
+
+    if (content.length > 200) {
+      return NextResponse.json(
+        { error: 'Content too long (max 200 characters)' },
+        { status: 400 }
+      )
+    }
+
+    // Get actual user ID from database if session exists
+    let userId = null;
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      });
+      userId = user?.id || null;
+    }
+
+    // Check for existing comment today (1 per day limit)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingComment = await prisma.comment.findFirst({
+      where: {
+        resourceId,
+        OR: [
+          { userId: userId },
+          { deviceId: deviceId }
+        ],
+        createdAt: {
+          gte: today
+        }
+      }
+    });
+    
+    if (existingComment) {
+      return NextResponse.json(
+        { success: false, error: "You can only comment once per day on each resource" },
+        { status: 429 }
+      );
     }
 
     const comment = await prisma.comment.create({
       data: {
         resourceId,
-        content,
-        userId: session?.user?.id || null,   // ✅ now gets saved
-        deviceId: session?.user?.id ? null : deviceId,
-        isVerified: !!session?.user?.id,
+        content: content.trim(),
+        userId: userId,
+        deviceId: userId ? null : deviceId,
+        isVerified: !!userId,
       },
       include: {
         user: { select: { name: true, email: true } },

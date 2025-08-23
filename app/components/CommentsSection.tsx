@@ -108,7 +108,7 @@ export default function CommentsSection({
             // Within 1km, submit anonymous comment
             await submitComment(null);
           } else {
-            setShowSuccessMessage(`❌ You must be within 100m to comment. You are ${(distance * 1000).toFixed(0)}m away.`);
+            setShowSuccessMessage(`❌ You must be within 100km to comment. You are ${(distance * 1000).toFixed(0)}m away.`);
             setTimeout(() => setShowSuccessMessage(null), 4000);
           }
           setIsVerifyingLocation(false);
@@ -151,7 +151,7 @@ export default function CommentsSection({
         setShowSuccessMessage('✅ Comment posted successfully!');
         setTimeout(() => setShowSuccessMessage(null), 3000);
       } else {
-        setShowSuccessMessage('❌ Failed to post comment');
+        setShowSuccessMessage('❌ Failed to post comment, please wait 24 hours since last comment.');
         setTimeout(() => setShowSuccessMessage(null), 3000);
       }
     } catch (error) {
@@ -192,10 +192,10 @@ export default function CommentsSection({
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Share your experience with this resource..."
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none text-gray-900 placeholder-gray-500"              rows={3}
-              maxLength={500}
+              maxLength={200}
             />
             <div className="text-xs text-slate-500 mt-1 text-right">
-              {newComment.length}/500
+              {newComment.length}/200
             </div>
           </div>
 

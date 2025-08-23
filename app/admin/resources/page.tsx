@@ -9,6 +9,9 @@ interface Resource {
   category: string;
   address: string;
   createdAt: string;
+  _count?: {
+    comments: number;
+  };
 }
 
 export default function AdminResources() {
@@ -57,9 +60,12 @@ export default function AdminResources() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Manage Resources</h1>
-          <a href="/admin/resources/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 inline-block">
-                Add New Resource
-        </a>
+          <a 
+            href="/admin/resources/new" 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 inline-block"
+          >
+            Add New Resource
+          </a>
         </div>
         
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -70,6 +76,7 @@ export default function AdminResources() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Address</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Created</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Comments</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
               </tr>
             </thead>
@@ -88,8 +95,17 @@ export default function AdminResources() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                     {new Date(resource.createdAt).toLocaleDateString()}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {resource._count?.comments || 0}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                    <a 
+                      href={`/admin/resources/${resource.id}/comments`}
+                      className="text-green-600 hover:text-green-900 mr-4"
+                    >
+                      Comments ({resource._count?.comments || 0})
+                    </a>
                     <button 
                       onClick={() => deleteResource(resource.id)}
                       className="text-red-600 hover:text-red-900"
