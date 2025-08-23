@@ -17,7 +17,7 @@ const nextConfig = withPWA({
   },
   
   // Add CDN configuration
-  assetPrefix: process.env.NODE_ENV === 'production' ? 'https://bayarea-resource.com' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? 'https://bayarea-resources.com' : '',
   trailingSlash: true,
   compress: true,
   
