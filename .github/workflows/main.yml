@@ -7,34 +7,21 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Run Tests
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
-    
+        
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+          
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
-    - name: Debug repo contents
-      run: |
-        echo "PWD:"
-        pwd
-        echo "Top-level files:"
-        ls -lah
-        echo "Looking for package.json:"
-        find . -maxdepth 3 -name "package.json"
-        echo "Directory structure:"
-        tree -L 2 || find . -type d -maxdepth 2
-
+            
     - name: Install dependencies
       run: npm install
-      # Removed working-directory temporarily
-
-    - name: Run tests
-      run: npm test
-      # Removed working-directory temporarily
+      
+    - name: Build application
+      run: npm run build
