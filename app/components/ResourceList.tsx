@@ -221,38 +221,51 @@ export default function ResourceList({ resources }: ResourceListProps) {
                       )}
 
                       {/* Operating hours status */}
-                      {resource.schedule && (
-                        <motion.div 
-                          className="mt-2"
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: (index * 0.05) + 0.3 }}
-                        >
-                          {(() => {
-                            const status = getStatusDisplay(resource.schedule);
-                            const colorClasses = {
-                              green: 'text-green-600 bg-green-50',
-                              yellow: 'text-amber-600 bg-amber-50', 
-                              orange: 'text-orange-600 bg-orange-50',
-                              red: 'text-red-600 bg-red-50',
-                              gray: 'text-slate-500 bg-slate-50'
-                            };
-                            
-                            return (
-                              <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${colorClasses[status.color]}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                  status.color === 'green' ? 'bg-green-400' :
-                                  status.color === 'yellow' ? 'bg-amber-400' :
-                                  status.color === 'orange' ? 'bg-orange-400' :
-                                  status.color === 'red' ? 'bg-red-400' :
-                                  'bg-slate-400'
-                                }`} />
-                                {status.text}
-                              </span>
-                            );
-                          })()}
-                        </motion.div>
-                      )}
+                        {resource.schedule && (
+                          <motion.div 
+                            className="mt-2"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: (index * 0.05) + 0.3 }}
+                          >
+                            {(() => {
+                              try {
+                                console.log(`Schedule for ${resource.name}:`, resource.schedule); // Debug log
+                                const status = getStatusDisplay(resource.schedule);
+                                console.log(`Status for ${resource.name}:`, status); // Debug log
+                                
+                                const colorClasses = {
+                                  green: 'text-green-600 bg-green-50',
+                                  yellow: 'text-amber-600 bg-amber-50', 
+                                  orange: 'text-orange-600 bg-orange-50',
+                                  red: 'text-red-600 bg-red-50',
+                                  gray: 'text-slate-500 bg-slate-50'
+                                };
+                                
+                                return (
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${colorClasses[status.color]}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                      status.color === 'green' ? 'bg-green-400' :
+                                      status.color === 'yellow' ? 'bg-amber-400' :
+                                      status.color === 'orange' ? 'bg-orange-400' :
+                                      status.color === 'red' ? 'bg-red-400' :
+                                      'bg-slate-400'
+                                    }`} />
+                                    {status.text}
+                                  </span>
+                                );
+                              } catch (error) {
+                                console.error(`Error getting status for ${resource.name}:`, error);
+                                return (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium text-slate-500 bg-slate-50">
+                                    <span className="w-1.5 h-1.5 rounded-full mr-1.5 bg-slate-400" />
+                                    Call to confirm hours
+                                  </span>
+                                );
+                              }
+                            })()}
+                          </motion.div>
+                        )}
                     </div>
 
                     {/* Right side - Quick indicators and actions */}

@@ -10,7 +10,7 @@ function validateResourceData(data: any) {
     errors.push('Name is required and must be under 100 characters');
   }
   
-  if (!data.category || !['food', 'shelter', 'health', 'education'].includes(data.category)) {
+  if (!data.category || !['food', 'shelter', 'health', 'education', 'clothing', 'transportation'].includes(data.category)) {
     errors.push('Valid category required (food, shelter, health, education)');
   }
   

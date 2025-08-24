@@ -12,8 +12,18 @@ export function isOpenNow(schedule: Schedule): boolean {
 
   const todaySchedule = schedule[currentDay];
   
-  if (!todaySchedule || todaySchedule === 'closed') {
+  if (!todaySchedule) {
     return false;
+  }
+
+  const cleaned = todaySchedule.trim().toLowerCase();
+
+  if (cleaned === 'closed' || cleaned === 'by appointment') {
+    return false;
+  }
+
+  if (cleaned === 'open 24 hours' || cleaned === '0:00-23:59') {
+    return true;
   }
 
   // Handle different time formats
@@ -31,17 +41,25 @@ export function isOpenNow(schedule: Schedule): boolean {
 }
 
 function parseTimeString(timeStr: string): number | null {
-  const cleaned = timeStr.trim();
-  
-  // Handle formats like "9:00", "09:00", "9", "17:30"
-  if (cleaned.includes(':')) {
-    const [hours, minutes] = cleaned.split(':').map(Number);
-    return hours + (minutes / 60);
-  } else {
-    // Just hours like "9" or "17"
-    const hours = parseInt(cleaned);
-    return isNaN(hours) ? null : hours;
+  const cleaned = timeStr.trim().toLowerCase();
+
+  // Handle special cases
+  if (cleaned === "closed" || cleaned === "by appointment" || cleaned === "open 24 hours") {
+    return null;
   }
+
+  // Match formats like "9", "9:30", "9 am", "9:30 pm", "12:00 pm"
+  const match = cleaned.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if (!match) return null;
+
+  let hours = parseInt(match[1]);
+  const minutes = match[2] ? parseInt(match[2]) : 0;
+  const meridian = match[3];
+
+  if (meridian === "pm" && hours < 12) hours += 12;
+  if (meridian === "am" && hours === 12) hours = 0;
+
+  return hours + minutes / 60;
 }
 
 function formatTime(timeDecimal: number): string {
@@ -70,9 +88,21 @@ export function getNextOpenTime(schedule: Schedule): string {
   const currentDay = dayNames[now.getDay()];
   const todaySchedule = schedule[currentDay];
   
-  if (todaySchedule && todaySchedule !== 'closed' && todaySchedule.includes('-')) {
-    const [startTime] = todaySchedule.split('-');
-    return `Opens at ${startTime} today`;
+  if (todaySchedule) {
+    const cleaned = todaySchedule.trim().toLowerCase();
+
+    if (cleaned === 'open 24 hours' || cleaned === '0:00-23:59') {
+      return 'Open 24 Hours';
+    }
+
+    if (cleaned === 'by appointment') {
+      return 'Call to confirm hours';
+    }
+
+    if (cleaned !== 'closed' && todaySchedule.includes('-')) {
+      const [startTime] = todaySchedule.split('-');
+      return `Opens at ${startTime} today`;
+    }
   }
   
   // Check tomorrow and beyond
@@ -81,21 +111,41 @@ export function getNextOpenTime(schedule: Schedule): string {
     const day = dayNames[dayIndex];
     const daySchedule = schedule[day];
     
-    if (daySchedule && daySchedule !== 'closed') {
-      const dayName = day.charAt(0).toUpperCase() + day.slice(1);
-      return `Opens ${dayName}`;
+    if (daySchedule) {
+      const cleaned = daySchedule.trim().toLowerCase();
+
+      if (cleaned === 'open 24 hours' || cleaned === '0:00-23:59') {
+        return `Opens ${day.charAt(0).toUpperCase() + day.slice(1)} (24 Hours)`;
+      }
+
+      if (cleaned === 'by appointment') {
+        return 'Call to confirm hours';
+      }
+
+      if (cleaned !== 'closed' && daySchedule.includes('-')) {
+        const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+        return `Opens ${dayName}`;
+      }
     }
   }
   
-  return 'Schedule unavailable';
+  return 'Call to confirm hours';
 }
 
-// Get current status with user-friendly text and midnight cutoff logic
 export function getStatusDisplay(schedule: Schedule): {
   isOpen: boolean;
   text: string;
   color: 'green' | 'red' | 'yellow' | 'orange' | 'gray';
 } {
+  // Handle completely missing or empty schedule
+  if (!schedule || Object.keys(schedule).length === 0) {
+    return {
+      isOpen: false,
+      text: 'Call to confirm hours',
+      color: 'gray'
+    };
+  }
+
   const now = new Date();
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const currentDay = dayNames[now.getDay()];
@@ -105,26 +155,44 @@ export function getStatusDisplay(schedule: Schedule): {
 
   const todaySchedule = schedule[currentDay];
   
-  // No schedule data
   if (!todaySchedule) {
-    return {
-      isOpen: false,
-      text: 'Hours unknown',
-      color: 'gray'
-    };
-  }
-
-  // Closed today
-  if (todaySchedule === 'closed') {
     const nextOpen = findNextOpenDay(schedule, now);
     return {
       isOpen: false,
-      text: nextOpen || 'Closed today',
+      text: nextOpen || 'Call to confirm hours',
       color: 'red'
     };
   }
 
-  // Parse today's time ranges (handles both single "9-17" and multi "8-9,12-13:30,16-17:30")
+  const cleaned = todaySchedule.trim().toLowerCase();
+
+  // Handle scenarios
+  if (cleaned === 'closed') {
+    const nextOpen = findNextOpenDay(schedule, now);
+    return {
+      isOpen: false,
+      text: nextOpen || 'Call to confirm hours',
+      color: nextOpen ? 'red' : 'gray'
+    };
+  }
+
+  if (cleaned === 'open 24 hours' || cleaned === '0:00-23:59') {
+    return {
+      isOpen: true,
+      text: 'Open 24 Hours',
+      color: 'green'
+    };
+  }
+
+  if (cleaned === 'by appointment') {
+    return {
+      isOpen: false,
+      text: 'Call to confirm hours',
+      color: 'gray'
+    };
+  }
+
+  // Parse today's time ranges (supports multi-ranges separated by commas)
   const timeRanges = todaySchedule.split(',').map(range => {
     if (range.includes('-')) {
       const [startTime, endTime] = range.split('-');
@@ -138,7 +206,7 @@ export function getStatusDisplay(schedule: Schedule): {
   if (timeRanges.length === 0) {
     return {
       isOpen: false,
-      text: 'Hours unavailable',
+      text: 'Call to confirm hours',
       color: 'gray'
     };
   }
@@ -165,11 +233,10 @@ export function getStatusDisplay(schedule: Schedule): {
     }
   }
 
-  // Not currently open - find next opening
+  // Not currently open - find next opening today
   const futureRanges = timeRanges.filter(range => currentTime < range.start);
   
   if (futureRanges.length > 0) {
-    // Find the earliest future opening today
     const nextRange = futureRanges.reduce((earliest, range) => 
       range.start < earliest.start ? range : earliest
     );
@@ -177,7 +244,6 @@ export function getStatusDisplay(schedule: Schedule): {
     const hoursUntilOpen = nextRange.start - currentTime;
     const openingTimeFormatted = formatTime(nextRange.start);
     
-    // Color based on time until opening
     let color: 'yellow' | 'orange';
     if (hoursUntilOpen <= 3) {
       color = 'yellow'; // Opens soon
@@ -196,15 +262,14 @@ export function getStatusDisplay(schedule: Schedule): {
   const nextOpen = findNextOpenDay(schedule, now);
   return {
     isOpen: false,
-    text: nextOpen || 'Closed',
-    color: 'red'
+    text: nextOpen || 'Call to confirm hours',
+    color: nextOpen ? 'red' : 'gray'
   };
 }
 
 function findNextOpenDay(schedule: Schedule, currentDate: Date): string | null {
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   
-  // Check tomorrow and beyond (up to 7 days)
   for (let i = 1; i <= 7; i++) {
     const nextDate = new Date(currentDate);
     nextDate.setDate(currentDate.getDate() + i);
@@ -213,8 +278,27 @@ function findNextOpenDay(schedule: Schedule, currentDate: Date): string | null {
     const day = dayNames[dayIndex];
     const daySchedule = schedule[day];
     
-    if (daySchedule && daySchedule !== 'closed') {
-      // Get first opening time of that day
+    if (daySchedule) {
+      const cleaned = daySchedule.trim().toLowerCase();
+
+      if (cleaned === 'closed') continue;
+
+      if (cleaned === 'open 24 hours' || cleaned === '0:00-23:59') {
+        const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+        const tomorrow = new Date(currentDate);
+        tomorrow.setDate(currentDate.getDate() + 1);
+        
+        if (nextDate.toDateString() === tomorrow.toDateString()) {
+          return `Opens tomorrow (24 Hours)`;
+        } else {
+          return `Opens ${dayName} (24 Hours)`;
+        }
+      }
+      
+      if (cleaned === 'by appointment') {
+        return 'Call to confirm hours';
+      }
+
       const firstRange = daySchedule.split(',')[0];
       if (firstRange.includes('-')) {
         const [startTime] = firstRange.split('-');
@@ -222,8 +306,6 @@ function findNextOpenDay(schedule: Schedule, currentDate: Date): string | null {
         
         if (start !== null) {
           const timeFormatted = formatTime(start);
-          
-          // Check if next opening is tomorrow or later
           const tomorrow = new Date(currentDate);
           tomorrow.setDate(currentDate.getDate() + 1);
           

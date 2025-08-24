@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (category && category !== 'all') {
-      const validCategories = ['food', 'shelter', 'health', 'education'];
+      const validCategories = ['food', 'shelter', 'health', 'education', 'clothing', 'transportation'];
       if (!validCategories.includes(category)) {
         logApiCall(request, 400, Date.now() - startTime);
         return NextResponse.json(

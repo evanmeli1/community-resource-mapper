@@ -91,11 +91,13 @@ export default function ResourceFilter({
   }, [onSearchChange]);
 
   const categories = [
-    { value: 'all', label: 'All Categories', icon: '🏠' },
-    { value: 'food', label: 'Food', icon: '🍽️' },
-    { value: 'shelter', label: 'Shelter', icon: '🏠' },
-    { value: 'health', label: 'Health', icon: '🏥' },
-    { value: 'saved', label: 'Saved Only', icon: '❤️' },
+  { value: 'all', label: 'All Categories', icon: '🏠' },
+  { value: 'food', label: 'Food', icon: '🍽️' },
+  { value: 'shelter', label: 'Shelter', icon: '🏠' },
+  { value: 'health', label: 'Health', icon: '🏥' },
+  { value: 'clothing', label: 'Clothing', icon: '👕' },
+  { value: 'transportation', label: 'Transportation', icon: '🚌' },
+  { value: 'saved', label: 'Saved Only', icon: '❤️' },
   ];
 
   const activeFiltersCount = [
