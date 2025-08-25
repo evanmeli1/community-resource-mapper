@@ -334,7 +334,7 @@ function HomeContent() {
                     )}
                     <span className="relative flex items-center space-x-1">
                       <span aria-hidden="true">{icon}</span>
-                      <span className="hidden lg:inline">{label}</span>
+                      <span>{label}</span>
                     </span>
                   </motion.button>
                 ))}
@@ -431,7 +431,7 @@ function HomeContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               <motion.section
                 className="bg-amber-50/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden order-1 lg:order-1"
@@ -487,7 +487,7 @@ function HomeContent() {
                   <span>Map View</span>
                 </h2>
               </div>
-              <div className="h-64 md:h-96 lg:h-[70vh]">
+              <div className="h-80 md:h-[60vh] lg:h-[70vh]">
                 <ResourceMap resources={filteredResources} />
               </div>
             </motion.section>
@@ -509,7 +509,7 @@ function HomeContent() {
                   <span>Resources ({filteredResources.length} found)</span>
                 </h2>
               </div>
-              <div className="h-64 md:h-96 lg:h-[70vh]">
+              <div className="h-80 md:h-[60vh] lg:h-[70vh]">
                 <ResourceList resources={filteredResources} />
               </div>
             </motion.section>
