@@ -45,7 +45,6 @@ export default function ResourceFilter({
   searchTerm,
   onSearchChange
 }: ResourceFilterProps) {
-    console.log("ResourceFilter received currentCategory:", currentCategory); // ADD THIS LINE
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAdvanced, setShowAdvanced] = useState(false);

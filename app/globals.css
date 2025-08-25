@@ -44,3 +44,34 @@ body {
   clip: auto;
   white-space: normal;
 }
+
+/* ✅ Fix Mapbox CSS warning & canvas sizing */
+.mapboxgl-canvas {
+  position: absolute !important;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ✅ Force popup text black + white background */
+.force-black-popup .mapboxgl-popup-content {
+  color: #000 !important;
+  background: #fff !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.mapboxgl-popup-content,
+.mapboxgl-popup-content * {
+  color: #000 !important;
+  background: #fff !important;
+}
+/* Style the popup resource name */
+.force-black-popup .mapboxgl-popup-content h3 {
+  color: #1d4ed8 !important; /* Tailwind's blue-700 */
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+

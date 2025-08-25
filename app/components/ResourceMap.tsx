@@ -38,11 +38,15 @@ export default function ResourceMap({ resources }: ResourceMapProps) {
       new mapboxgl.Marker()
         .setLngLat([resource.lng, resource.lat])
         .setPopup(
-          new mapboxgl.Popup().setHTML(
+          new mapboxgl.Popup({
+            offset: 25,
+            closeButton: true,
+            className: 'force-black-popup'
+          }).setHTML(
             `<div>
-              <h3>${resource.name}</h3>
-              <p>${resource.address}</p>
-              <p>Category: ${resource.category}</p>
+              <h3 class="popup-title">${resource.name}</h3>
+              <p class="popup-address">${resource.address}</p>
+              <p class="popup-category">Category: ${resource.category}</p>
             </div>`
           )
         )

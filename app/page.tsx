@@ -165,8 +165,7 @@ function HomeContent() {
   let filteredResources = processedResources;
 
   const category = searchParams.get("category");
-  console.log("Category from URL:", category); // ADD THIS LINE
-  console.log("searchParams object:", searchParams.toString()); // ADD THIS LINE TOO
+
 
   // Only keep saved favorites filter (client-side only)
   if (category === "saved") {
@@ -405,8 +404,6 @@ function HomeContent() {
 
       {/* Main */}
       <main id="main-content" className="max-w-7xl mx-auto p-4">
-
-        console.log("Passing category to ResourceFilter:", category || "all");
         <motion.div
           initial={{ y: -10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
