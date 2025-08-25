@@ -167,98 +167,102 @@ router.push(newUrl);
         {/* Main Filter Row */}
         <div className="flex items-center justify-between gap-4">
           {/* Category Pills */}
-          <div className="flex items-center gap-2 flex-1" role="tablist" aria-label="Resource categories">
-            {categories.map(({ value, label, icon }) => (
-              <motion.button
-                key={value}
-                onClick={() => updateFilter('category', value)}
-                role="tab"
-                aria-selected={currentCategory === value}
-                aria-label={`Filter by ${label}`}
-                className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                  currentCategory === value
-                    ? 'text-slate-900'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {currentCategory === value && (
-                  <motion.div
-                    layoutId="activeCategory"
-                    className="absolute inset-0 bg-blue-100 rounded-lg"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-                <span className="relative flex items-center space-x-1">
-                  <span className="text-xs" aria-hidden="true">{icon}</span>
-                  <span className="hidden sm:inline">{label}</span>
-                </span>
-              </motion.button>
-            ))}
-          </div>
+          <div 
+  className="flex items-center gap-2 flex-1 overflow-x-auto no-scrollbar sm:overflow-visible"
+  role="tablist" 
+  aria-label="Resource categories"
+>
+  {categories.map(({ value, label, icon }) => (
+    <motion.button
+      key={value}
+      onClick={() => updateFilter('category', value)}
+      role="tab"
+      aria-selected={currentCategory === value}
+      aria-label={`Filter by ${label}`}
+      className={`relative px-2 py-1 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${
+        currentCategory === value
+          ? 'text-slate-900'
+          : 'text-slate-500 hover:text-slate-700'
+      }`}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {currentCategory === value && (
+        <motion.div
+          layoutId="activeCategory"
+          className="absolute inset-0 bg-blue-100 rounded-md"
+          initial={false}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+      )}
+      <span className="relative flex flex-col items-center space-y-0.5">
+        <span className="text-base" aria-hidden="true">{icon}</span>
+        <span className="text-[10px]">{label}</span>
+      </span>
+    </motion.button>
+  ))}
+</div>
+
 
           {/* Right Side Controls */}
-          <div className="flex items-center gap-3">
-            {/* Open Now Toggle */}
-            <motion.label 
-              className="flex items-center cursor-pointer"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={showOpenOnly}
-                  onChange={(e) => updateFilter('openNow', e.target.checked.toString())}
-                  className="sr-only"
-                  aria-describedby="open-now-description"
-                />
-                <div className={`w-11 h-6 rounded-full transition-colors ${
-                  showOpenOnly ? 'bg-green-500' : 'bg-slate-300'
-                }`} aria-hidden="true">
-                  <motion.div
-                    className="w-5 h-5 bg-white rounded-full shadow-sm m-0.5"
-                    animate={{ x: showOpenOnly ? 20 : 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                </div>
-              </div>
-              <span id="open-now-description" className="ml-2 text-sm text-slate-600">Open Now</span>
-            </motion.label>
+<div className="flex items-center gap-2">
+  {/* Open Now Toggle */}
+  <motion.label 
+    className="flex items-center cursor-pointer text-xs"
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <div className="relative">
+      <input
+        type="checkbox"
+        checked={showOpenOnly}
+        onChange={(e) => updateFilter('openNow', e.target.checked.toString())}
+        className="sr-only"
+        aria-describedby="open-now-description"
+      />
+      <div className={`w-8 h-4 rounded-full transition-colors ${
+        showOpenOnly ? 'bg-green-500' : 'bg-slate-300'
+      }`} aria-hidden="true">
+        <motion.div
+          className="w-3.5 h-3.5 bg-white rounded-full shadow-sm m-0.5"
+          animate={{ x: showOpenOnly ? 12 : 0 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+      </div>
+    </div>
+    <span id="open-now-description" className="ml-1 text-xs text-slate-600">Open</span>
+  </motion.label>
 
-            {/* Advanced Filters Toggle */}
-            <motion.button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              aria-expanded={showAdvanced}
-              aria-label="Toggle advanced filters"
-              className={`p-2 rounded-lg transition-colors relative ${
-                showAdvanced || activeFiltersCount > 0
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-              </svg>
-              
-              {/* Active filters indicator */}
-              {activeFiltersCount > 0 && (
-                <motion.div
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  aria-label={`${activeFiltersCount} active filters`}
-                >
-                  {activeFiltersCount}
-                </motion.div>
-              )}
-            </motion.button>
-          </div>
+  {/* Advanced Filters Toggle */}
+  <motion.button
+    onClick={() => setShowAdvanced(!showAdvanced)}
+    aria-expanded={showAdvanced}
+    aria-label="Toggle advanced filters"
+    className={`p-1.5 rounded-md transition-colors relative text-xs ${
+      showAdvanced || activeFiltersCount > 0
+        ? 'bg-blue-100 text-blue-600'
+        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+    }`}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+    </svg>
+
+    {activeFiltersCount > 0 && (
+      <motion.div
+        className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        aria-label={`${activeFiltersCount} active filters`}
+      >
+        {activeFiltersCount}
+      </motion.div>
+    )}
+  </motion.button>
+</div>
         </div>
 
         {/* Advanced Filters - Collapsible */}

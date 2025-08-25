@@ -250,10 +250,10 @@ function HomeContent() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:h-16 w-full">
             {/* Logo */}
             <motion.div
-              className="flex items-center space-x-3"
+              className="flex items-center space-x-2 flex-shrink-0"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -291,10 +291,10 @@ function HomeContent() {
             </motion.div>
 
             {/* Right side: View Toggle + User Menu */}
-            <div className="flex items-center space-x-4">
+              <div className="flex items-center flex-1 justify-between">
               {/* View Toggle */}
               <motion.div
-                className="hidden md:flex items-center bg-slate-100 rounded-lg p-1"
+              className="flex items-center bg-slate-100 rounded-lg p-1 text-xs sm:text-sm gap-2 sm:gap-2"
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
