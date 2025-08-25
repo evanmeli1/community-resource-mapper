@@ -26,7 +26,7 @@ const sanitizeInput = (input: string): string => {
 
 // Validate filter parameters
 const isValidCategory = (category: string): boolean => {
-  const validCategories = ['all', 'food', 'shelter', 'health', 'saved'];
+  const validCategories = ['all', 'food', 'shelter', 'health', 'clothing', 'transportation', 'saved'];
   return validCategories.includes(category);
 };
 
@@ -45,6 +45,7 @@ export default function ResourceFilter({
   searchTerm,
   onSearchChange
 }: ResourceFilterProps) {
+    console.log("ResourceFilter received currentCategory:", currentCategory); // ADD THIS LINE
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -77,7 +78,8 @@ export default function ResourceFilter({
       params.set(key, value);
     }
     
-    router.push(`?${params.toString()}`);
+const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+router.push(newUrl);
   }, [searchParams, router]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
